@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start:dev": "node --watch --env-file=.env index.js"
+    "start:dev": "node --watch --env-file=.env index.js",
+    "start:prod": "node --env-file=.env index.js"
   },
   "keywords": [],
   "author": "",

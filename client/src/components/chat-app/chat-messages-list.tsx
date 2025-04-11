@@ -18,7 +18,7 @@ const ListItem: FC<{ children: ReactNode }> = ({ children }) => {
 
 const ChatMessagesList: FC<{ messages: string[] }> = ({ messages }) => {
   return (<section className="border bg-white rounded-md shadow-sm">
-    <ul className="h-[25rem] p-4 space-y-1 text-gray-500 list-inside dark:text-gray-400">
+    <ul className="h-[25rem] p-4 space-y-1 text-gray-500 list-inside dark:text-gray-400 break-all">
       {messages.map((msg, i) => <ListItem key={i} children={msg} />)}
     </ul>
   </section>)

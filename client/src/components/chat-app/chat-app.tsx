@@ -1,34 +1,56 @@
 import ChatFooter from "@chat-app/chat-footer";
 import ChatMessagesList from "@chat-app/chat-messages-list";
-import { ChangeEvent, useEffect, useState, type FC } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState, type FC } from "react";
 import { Manager, Socket } from "socket.io-client";
 import ChatHeader from "./chat-header";
 
 const manager = new Manager("http://localhost:8080", { autoConnect: false });
 const socket: Socket = manager.socket("/");
 
+// eslint-disable-next-line react-refresh/only-export-components
+export enum FormKeys {
+  MESSAGE = 'message',
+  ROOM_ID = 'room_id',
+}
+
 const ChatApp: FC = () => {
-  const [socketId, setSocketId] = useState<string>('');
   const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState<string>("");
+  const [socketId, setSocketId] = useState<string>('');
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
+  const formIntialState = {
+    [FormKeys.MESSAGE]: '',
+    [FormKeys.ROOM_ID]: '',
+  }
+
+  const [formState, setFormState] = useState<Record<FormKeys, string>>(formIntialState);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setFormState((pre) => ({ ...pre, [name]: value }));
   };
 
-  const handleClearInput = () => {
-    setInput("");
+  const handleFormReset = (): void => {
+    setFormState(formIntialState);
   };
 
-  const handleMessageSend = () => {
-    if (input.trim()) {
-      socket.emit("message", input);
-      handleClearInput();
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+
+    const message = formState?.[FormKeys.MESSAGE].trim();
+    const room = formState?.[FormKeys.ROOM_ID].trim();
+
+    if (!message) return;
+
+    if (room) {
+      socket.emit('message', { message, room });
+    } else {
+      socket.emit('message', { message });
     }
+
+    handleFormReset();
   };
 
   const connectSocket = async () => {
-
     socket.connect();
 
     socket.on("connect", () => {
@@ -61,8 +83,9 @@ const ChatApp: FC = () => {
         <ChatMessagesList messages={messages} />
         <ChatFooter
           handleInputChange={handleInputChange}
-          handleMessageSend={handleMessageSend}
-          input={input}
+          handleFormSubmit={handleFormSubmit}
+          handleFormReset={handleFormReset}
+          formState={formState}
         />
       </div>
     </main>
