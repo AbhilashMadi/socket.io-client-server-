@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { Server as SocketIOServer } from 'socket.io';
+import { instrument } from '@socket.io/admin-ui';
 
 const PORT = 8080;
 
@@ -14,24 +15,49 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(json());
 
-const server = createServer(app);
-const io = new SocketIOServer(server, { cors: { origin: '*' } });
+// Static folder
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
-// Socket.IO events
+// Basic API route (optional)
+app.get('/api', async (req, res) => {
+  console.log('API hit');
+  res.json({ message: 'Hello from API' });
+});
+
+// Fallback to SPA for unmatched routes
+app.get('/{*splat}', (_, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+});
+
+// Create HTTP server
+const server = createServer(app);
+
+// Create socket server
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: ['https://admin.socket.io'],
+    credentials: true
+  }
+});
+
+// Enable admin UI
+instrument(io, {
+  auth: false,
+  mode: 'development',
+});
+
+// Socket event handling
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   socket.on('message', ({ message, room }) => {
-    const socketId = socket.id;
-
     if (room) {
-      console.log(`Broadcast message from ${socketId} - to ${room}`, message);
+      console.log(`Room message from ${socket.id} to ${room}:`, message);
       socket.to(room).emit('message', message);
-      return;
+    } else {
+      console.log(`Broadcast from ${socket.id}:`, message);
+      socket.broadcast.emit('message', `${socket.id}: ${message}`);
     }
-
-    console.log(`Broadcast message from ${socketId}:`, message);
-    socket.broadcast.emit('message', `${socketId}: ${message}`);
   });
 
   socket.on('disconnect', () => {
@@ -39,14 +65,8 @@ io.on('connection', (socket) => {
   });
 });
 
-app.get('/api', async (req, res) => {
-  console.log('API hit');
-  res.json({ message: 'Hello from API' });
-});
-
-app.use(express.static(path.join(__dirname, 'client', 'dist')))
-app.get('/{*splat}', (_, res) => res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html')));
-
+// Start server
 server.listen(PORT, () => {
-  console.log(`✅ Server is running on http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Admin UI available at https://admin.socket.io`);
 });
