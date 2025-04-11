@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-size-base: 14px;
+  --font-family-base: "Montserrat", sans-serif;
+  --font-family-mono: "Space Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-base;
+  }
+}
+
+@layer utilities {
+  .flex-center {
+    @apply flex justify-center items-center;
+  }
+}
